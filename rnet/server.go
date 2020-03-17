@@ -1,6 +1,7 @@
 package rnet
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"ratel/riface"
@@ -27,6 +28,17 @@ type Server struct {
 	Port int
 }
 
+// 定义当前客户端链接的所绑定handle api(暂时写死)
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	// 回显的业务
+	fmt.Println("[Conn Handle] CallbackToClient ... ")
+	if _, err := conn.Write(data[:cnt]); err != nil {
+		fmt.Println("write back buf err", err)
+		return errors.New("CallBackToClient error")
+	}
+	return nil
+}
+
 func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listener at IP :%s, Post: %d, is starting \n", s.IP, s.Port)
 	go func() {
@@ -44,7 +56,8 @@ func (s *Server) Start() {
 			return
 		}
 		fmt.Println("start Ratel server succ, ", s.Name, " succ, Listening...")
-
+		var cid uint32
+		cid = 0
 		// 3 阻塞的等待客户端链接，处理客户端链接业务(读写)
 		for {
 			// 如果有客户端链接过来，阻塞会返回
@@ -54,24 +67,12 @@ func (s *Server) Start() {
 				continue
 			}
 
-			// 已经与客户端建立连接，做一些业务，做一个最基本的最大512字节长度的回显业务
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("recv buf err", err)
-						continue
-					}
+			//  将处理新链接的业务方法 和 conn 进行绑定 得到我们的链接模块
+			dealConn := NewConnection(conn, cid, CallBackToClient)
+			cid++
 
-					// 回显功能
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Println("write back buf err", err)
-						continue
-					}
-				}
-			}()
-
+			// 启动当前的链接业务模块
+			go dealConn.Start()
 		}
 	}()
 }
