@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"ratel/riface"
+	"ratel/utils"
 )
 
 /**
@@ -30,7 +31,10 @@ type Server struct {
 }
 
 func (s *Server) Start() {
-	fmt.Printf("[Start] Server Listener at IP :%s, Post: %d, is starting \n", s.IP, s.Port)
+	fmt.Printf("[Ratel] Server Name : %s, listenner at IP : %s, Port: %d is starting \n",
+		utils.GlobalObject.Name, utils.GlobalObject.Host, utils.GlobalObject.TcpPort)
+	fmt.Printf("[Ratel] Version %s, MaxConn: %d, MaxPackageSize: %d \n",
+		utils.GlobalObject.Version, utils.GlobalObject.MaxCount, utils.GlobalObject.MaxPackageSize)
 	go func() {
 		// 1 获取一个TCP的Addr
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
@@ -92,10 +96,10 @@ func (s *Server) AddRouter(router riface.IRouter) {
 */
 func NewServer(name string) riface.IServer {
 	s := &Server{
-		Name:      name,
+		Name:      utils.GlobalObject.Name,
 		IPVersion: "tcp4",
-		IP:        "0.0.0.0",
-		Port:      8999,
+		IP:        utils.GlobalObject.Host,
+		Port:      utils.GlobalObject.TcpPort,
 		Router:    nil,
 	}
 
