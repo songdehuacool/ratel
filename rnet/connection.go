@@ -34,18 +34,18 @@ type Connection struct {
 	// 告知当前链接已经退出/停止 channel
 	ExitChan chan bool
 
-	// 该链接处理的方法Router
-	Router riface.IRouter
+	// 消息的管理MsgID 和对应的处理业务API关系
+	MsgHandler riface.IMsgHandler
 }
 
 // 初始化链接模块的方法
-func NewConnection(conn *net.TCPConn, connID uint32, roter riface.IRouter) *Connection {
+func NewConnection(conn *net.TCPConn, connID uint32, msgHandler riface.IMsgHandler) *Connection {
 	c := &Connection{
-		Conn:     conn,
-		ConnID:   connID,
-		isClosed: false,
-		Router:   roter,
-		ExitChan: make(chan bool, 1),
+		Conn:       conn,
+		ConnID:     connID,
+		isClosed:   false,
+		MsgHandler: msgHandler,
+		ExitChan:   make(chan bool, 1),
 	}
 	return c
 }
@@ -96,15 +96,9 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-
-		// 执行注册的路由方法
-		go func(request riface.IRequest) {
-			c.Router.PreHandle(request)
-			c.Router.Handler(request)
-			c.Router.PostHandle(request)
-		}(&req)
 		// 从路由中，找到注册绑定的Conn对应的router调用
-
+		// 根据绑定好的MsgID 找到对应处理api业务 执行
+		go c.MsgHandler.DoMsgHandler(&req)
 	}
 }
 
