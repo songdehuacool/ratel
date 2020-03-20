@@ -73,7 +73,7 @@ func (s *Server) Start() {
 
 // 停止服务
 func (s *Server) Stop() {
-
+	s.Stop()
 }
 
 // 运行服务器
