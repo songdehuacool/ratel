@@ -14,7 +14,7 @@ import (
  * @author     ：songdehua
  * @emall      ：200637086@qq.com
  * @date       ：Created in 2020/3/17 9:01 下午
- * @description：
+ * @description：链接模块
  * @modified By：
  * @version    ：$
  */
@@ -23,6 +23,9 @@ import (
 	链接模块
 */
 type Connection struct {
+	// 当前Conn隶属于哪个Server
+	TcpServer riface.IServer
+
 	// 当前链接的socket TCP套接字
 	Conn *net.TCPConn
 
@@ -43,8 +46,9 @@ type Connection struct {
 }
 
 // 初始化链接模块的方法
-func NewConnection(conn *net.TCPConn, connID uint32, msgHandler riface.IMsgHandler) *Connection {
+func NewConnection(server riface.IServer, conn *net.TCPConn, connID uint32, msgHandler riface.IMsgHandler) *Connection {
 	c := &Connection{
+		TcpServer:  server,
 		Conn:       conn,
 		ConnID:     connID,
 		isClosed:   false,
@@ -52,6 +56,10 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler riface.IMsgHandl
 		ExitChan:   make(chan bool, 1),
 		msgChan:    make(chan []byte),
 	}
+
+	// 将conn加入到COnnManager中
+	c.TcpServer.GetConnMgr().Add(c)
+
 	return c
 }
 
@@ -164,6 +172,9 @@ func (c *Connection) Start() {
 	go c.StartReader()
 	// TODO 启动从当前链接写数据的业务
 	go c.StartWrite()
+
+	// 按照开发者传递进来的 创建链接之后需要调用的处理业务，执行对应的Hook函数
+	c.TcpServer.CallOnConnStart(c)
 }
 
 // 停止链接 结束当前链接的工作
@@ -176,11 +187,17 @@ func (c *Connection) Stop() {
 	}
 	c.isClosed = true
 
+	// 调用开发者注册的 销毁之前 需要执行的业务Hook函数
+	c.TcpServer.CallOnConnStop(c)
+
 	// 关闭socket链接
 	c.Conn.Close()
 
 	// 告知Write关闭
 	c.ExitChan <- true
+
+	// 将当前连接从ConnMgr中删除
+	c.TcpServer.GetConnMgr().Remove(c)
 
 	// 回收资源
 	close(c.ExitChan)

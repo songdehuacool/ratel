@@ -28,6 +28,12 @@ type Server struct {
 	Port int
 	// 当前的Server的消息管理模块，用来绑定MsgID和对应的处理业务API关系
 	MsgHandler riface.IMsgHandler
+	// 该Server的连接管理器
+	ConnMgr riface.IConneManager
+	// 该Server创建链接之后自动调用Hook函数--OnConnStart
+	OnConnStart func(conn riface.IConnection)
+	// 该Server销毁链接之前自动调用的Hook函数--OnConnStop
+	OnConnStop func(conn riface.IConnection)
 }
 
 func (s *Server) Start() {
@@ -64,8 +70,16 @@ func (s *Server) Start() {
 				continue
 			}
 
+			// 设置最大连接个数的判断，如果超过最大连接，那么则关闭此次的连接
+			if s.ConnMgr.Len() >= utils.GlobalObject.MaxCount {
+				// TODO 给客户端响应一个超出最大连接的错误包
+				fmt.Println("Too Many Connection MaxConn = ", utils.GlobalObject.MaxCount)
+				conn.Close()
+				continue
+			}
+
 			//  将处理新链接的业务方法 和 conn 进行绑定 得到我们的链接模块
-			dealConn := NewConnection(conn, cid, s.MsgHandler)
+			dealConn := NewConnection(s, conn, cid, s.MsgHandler)
 			cid++
 
 			// 启动当前的链接业务模块
@@ -76,7 +90,9 @@ func (s *Server) Start() {
 
 // 停止服务
 func (s *Server) Stop() {
-	s.Stop()
+	// 将一些服务器的资源、状态或者一些已经开辟的链接信息 进行停止或者回收
+	fmt.Println("[STOP] Ratel server name", s.Name)
+	s.ConnMgr.ClearConn()
 }
 
 // 运行服务器
@@ -84,6 +100,7 @@ func (s *Server) Server() {
 	// 启动server的服务
 	s.Start()
 
+	// TODO 做一些启动服务器之后的额外业务
 	// 阻塞状态
 	select {}
 }
@@ -92,6 +109,11 @@ func (s *Server) Server() {
 func (s *Server) AddRouter(msgID uint32, router riface.IRouter) {
 	s.MsgHandler.AddRouter(msgID, router)
 	fmt.Println("Add Router Success!!!")
+}
+
+//
+func (s *Server) GetConnMgr() riface.IConneManager {
+	return s.ConnMgr
 }
 
 /*
@@ -104,7 +126,34 @@ func NewServer(name string) riface.IServer {
 		IP:         utils.GlobalObject.Host,
 		Port:       utils.GlobalObject.TcpPort,
 		MsgHandler: NewMsgHandler(),
+		ConnMgr:    NewConnManager(),
 	}
 
 	return s
+}
+
+// 注册OnConnStart 钩子函数的方法
+func (s *Server) SetOnConnStart(hookFunc func(connection riface.IConnection)) {
+	s.OnConnStart = hookFunc
+}
+
+// 调用OnConnStop 钩子函数的方法
+func (s *Server) SetOnConnStop(hookFunc func(connection riface.IConnection)) {
+	s.OnConnStop = hookFunc
+}
+
+// 调用OnConnStart钩子函数的方法
+func (s *Server) CallOnConnStart(conn riface.IConnection) {
+	if s.OnConnStart != nil {
+		fmt.Println("-----> Call OnConnStart() ... ")
+		s.OnConnStart(conn)
+	}
+}
+
+// 调用OnConnStop钩子函数的方法
+func (s *Server) CallOnConnStop(conn riface.IConnection) {
+	if s.OnConnStop != nil {
+		fmt.Println("-----> Call OnConnStop() ... ")
+		s.OnConnStop(conn)
+	}
 }
