@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"ratel/riface"
+	"ratel/utils"
 )
 
 /**
@@ -124,9 +125,15 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-		// 从路由中，找到注册绑定的Conn对应的router调用
-		// 根据绑定好的MsgID 找到对应处理api业务 执行
-		go c.MsgHandler.DoMsgHandler(&req)
+
+		if utils.GlobalObject.WorkerPoolSize > 0 {
+			// 已经开启了工作池机制，将消息发送给Worker工作池处理即可
+			c.MsgHandler.SendMsgToTaskQueue(&req)
+		} else {
+			// 从路由中，找到注册绑定的Conn对应的router调用
+			// 根据绑定好的MsgID 找到对应处理api业务 执行
+			go c.MsgHandler.DoMsgHandler(&req)
+		}
 	}
 }
 

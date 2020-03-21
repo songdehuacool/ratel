@@ -27,9 +27,11 @@ type GlobalObj struct {
 	/*
 		Ratel
 	*/
-	Version        string // 当前Ratel的版本号
-	MaxCount       int    // 当前服务器主机允许的最大链接数
-	MaxPackageSize uint32 // 当前Ratel框架数据包的最大值
+	Version          string // 当前Ratel的版本号
+	MaxCount         int    // 当前服务器主机允许的最大链接数
+	MaxPackageSize   uint32 // 当前Ratel框架数据包的最大值
+	WorkerPoolSize   uint32 // 当前业务工作Worker池的Groutine数量
+	MaxWorkerTaskLen uint32 // Ratel框架允许用户最多开辟多少个Worker(限定条件)
 }
 
 /*
@@ -55,12 +57,14 @@ func (g *GlobalObj) Reload() {
 func init() {
 	// 如果配置文件没有加载，默认的值
 	GlobalObject = &GlobalObj{
-		Host:           "0.0.0.0",
-		TcpPort:        8999,
-		Name:           "RatelServer",
-		Version:        "V0.4",
-		MaxCount:       1000,
-		MaxPackageSize: 4096,
+		Host:             "0.0.0.0",
+		TcpPort:          8999,
+		Name:             "RatelServer",
+		Version:          "V0.4",
+		MaxCount:         1000,
+		MaxPackageSize:   4096,
+		WorkerPoolSize:   10,   // Worker工作池的队列
+		MaxWorkerTaskLen: 1024, // 每个worker对应的消息队列的任务的数量最大值
 	}
 
 	// 应该尝试从conf/ratel.json取加载一些用户自定义的参数
