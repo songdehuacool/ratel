@@ -3,7 +3,7 @@ package rnet
 import (
 	"errors"
 	"fmt"
-	"ratel/riface"
+	"github.com/mrsongindezhou/ratel/riface"
 	"sync"
 )
 

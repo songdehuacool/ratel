@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"io/ioutil"
-	"ratel/riface"
+	"github.com/mrsongindezhou/ratel/riface"
 )
 
 /**

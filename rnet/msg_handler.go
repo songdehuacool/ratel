@@ -2,8 +2,8 @@ package rnet
 
 import (
 	"fmt"
-	"ratel/riface"
-	"ratel/utils"
+	"github.com/mrsongindezhou/ratel/riface"
+	"github.com/mrsongindezhou/ratel/utils"
 	"strconv"
 )
 

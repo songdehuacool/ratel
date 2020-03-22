@@ -1,6 +1,6 @@
 package rnet
 
-import "ratel/riface"
+import "github.com/mrsongindezhou/ratel/riface"
 
 /**
  * @author     ：songdehua
