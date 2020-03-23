@@ -39,6 +39,7 @@ func (mh *MsgHandler) DoMsgHandler(request riface.IRequest) {
 	handler, ok := mh.Apis[request.GetMsgID()]
 	if !ok {
 		fmt.Println("api msgID = ", request.GetMsgID(), " is NOT FOUND ! Need Register!")
+		return
 	}
 	// 2.根据MsgID调度对应router业务即可
 	handler.PreHandle(request)
