@@ -154,7 +154,7 @@ func (c *Connection) StartReader() {
 
 // 发送数据，将数据发送给远程的客户端
 // 提供一个SendMsg方法 将我们要发送给客户端的数据，先进行封包，再发送
-func (c *Connection) SendMsg(msgId uint32, data []byte, int2 int) error {
+func (c *Connection) SendMsg(msgId uint32, data []byte) error {
 	if c.isClosed {
 		return errors.New("Connection closed when send msg")
 	}
